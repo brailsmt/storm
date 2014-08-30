@@ -92,24 +92,30 @@ public class TopologyBuilder {
     private Map<String, IRichBolt> _bolts = new HashMap<String, IRichBolt>();
     private Map<String, IRichSpout> _spouts = new HashMap<String, IRichSpout>();
     private Map<String, ComponentCommon> _commons = new HashMap<String, ComponentCommon>();
-
-//    private Map<String, Map<GlobalStreamId, Grouping>> _inputs = new HashMap<String, Map<GlobalStreamId, Grouping>>();
-
     private Map<String, StateSpoutSpec> _stateSpouts = new HashMap<String, StateSpoutSpec>();
     
-    
     public StormTopology createTopology() {
+        return createTopology(false);
+    }
+
+    public StormTopology createValidationTopology() {
+        return createTopology(true);
+    }
+
+    private StormTopology createTopology(final boolean isValidationTopology) {
         Map<String, Bolt> boltSpecs = new HashMap<String, Bolt>();
         Map<String, SpoutSpec> spoutSpecs = new HashMap<String, SpoutSpec>();
         for(String boltId: _bolts.keySet()) {
             IRichBolt bolt = _bolts.get(boltId);
             ComponentCommon common = getComponentCommon(boltId, bolt);
-            boltSpecs.put(boltId, new Bolt(ComponentObject.serialized_java(Utils.javaSerialize(bolt)), common));
+            ComponentObject object = isValidationTopology? null: ComponentObject.serialized_java(Utils.serialize(bolt));
+            boltSpecs.put(boltId, new Bolt(object, common));
         }
         for(String spoutId: _spouts.keySet()) {
             IRichSpout spout = _spouts.get(spoutId);
             ComponentCommon common = getComponentCommon(spoutId, spout);
-            spoutSpecs.put(spoutId, new SpoutSpec(ComponentObject.serialized_java(Utils.javaSerialize(spout)), common));
+            ComponentObject object = isValidationTopology? null: ComponentObject.serialized_java(Utils.serialize(spout));
+            spoutSpecs.put(spoutId, new SpoutSpec(object, common));
             
         }
         return new StormTopology(spoutSpecs,
